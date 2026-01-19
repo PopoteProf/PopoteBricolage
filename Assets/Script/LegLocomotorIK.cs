@@ -12,6 +12,7 @@ public class LegLocomotorIK : MonoBehaviour {
     [Space(10)]
     [SerializeField] private float _legMoveThreshold;
     [Header("RayCasterParameters")]
+    [SerializeField] private LayerMask _groundLayer;
     [SerializeField] private float _raycasterAmplitudeMode;
     [SerializeField] private Transform _rayCaster;
     [SerializeField] private float _raycasterSpringSize =1;
@@ -67,7 +68,7 @@ public class LegLocomotorIK : MonoBehaviour {
         
         //_rayCaster.position = transform.position +_velocity*_raycasterAmplitudeMode;
         RaycastHit hit;
-        if (Physics.Raycast(_rayCaster.position, _rayCaster.forward, out hit, Mathf.Infinity)) {
+        if (Physics.Raycast(_rayCaster.position, _rayCaster.forward, out hit, Mathf.Infinity, _groundLayer)) {
             if (Vector3.Distance(_lastPos, hit.point) > _legMoveThreshold) {
                 StartLegMovement(hit.point);
                 _hit = hit.point;
@@ -86,7 +87,7 @@ public class LegLocomotorIK : MonoBehaviour {
         _timer += Time.deltaTime;
         float t = _timer / _legStepSpeed;
         Vector3 feetPos = Vector3.Lerp(_lastPos, _newPos, t);
-        feetPos.y = _legHeightCurve.Evaluate(t) * (_legHeightApex+Mathf.Lerp(_lastPos.y, _newPos.y, t));
+        feetPos.y = (Mathf.Lerp(_lastPos.y, _newPos.y, _legHeightCurve.Evaluate(t) ))+_legHeightApex*_legHeightCurve.Evaluate(t);
         _footTarget.position = feetPos;
         if (_timer >= _legStepSpeed) {
             EndLegMovement();

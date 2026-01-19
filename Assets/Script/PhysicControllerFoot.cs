@@ -33,7 +33,7 @@ public class PhysicControllerFoot : MonoBehaviour
             
             float footMidPos = Mathf.Abs((_leftFoot.MidPos.y+_rightFoot.MidPos.y)/2- transform.position.y);
             float springMod = _distanceToGround - footMidPos / _distanceToGround;
-            Debug.Log("spring mode = " + springMod);
+            //Debug.Log("spring mode = " + springMod);
             _rb.AddForce(Vector3.up * _upWardPower*Time.fixedDeltaTime*(_upWardPower*_springPower*springMod));
         }
         Vector2 moveInput = _moveAction.ReadValue<Vector2>();

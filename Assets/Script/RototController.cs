@@ -3,37 +3,55 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
-public class RototController : MonoBehaviour
+public class RototController : MonoBehaviour, IDamagable
 {
     [SerializeField] private float _moveSpeed;
     [SerializeField] private float _rotateSpeed;
     [SerializeField] private Camera _camera;
+    [Header("LifeParameters")]
+    //[SerializeField] private LocomotorBrainIK _locomotorBrainIK;
+    //[SerializeField] private PhysicControllerFoot _physicController;
+    //[SerializeField] private Rigidbody[] _rbRagdolls;
+    //[SerializeField] private Collider[] _colliders;
 
     [Header("CannonParameters")] [SerializeField] private Transform _cannon;
-    [SerializeField] private LineRenderer _lineRenderer;
-    [SerializeField, ColorUsage(true, true)] private Color _defaultLazerColor;
-    [SerializeField, ColorUsage(true, true)] private Color _fireLazerColor;
-    [SerializeField] private GameObject _prfFireImpact;
+    
+    [SerializeField] private Weapon[] _weapons;
 
+    private Weapon _currentWeapon;
+    private int _currenWeaponID;
     private bool _isFire;
+
+    private bool _isAlive=true;
     RaycastHit hit;
-    void Start() {
-        _lineRenderer.startColor =_defaultLazerColor;
-        _lineRenderer.endColor =_defaultLazerColor;
+    private InputAction _tabAction;
+
+    public void Start() {
+        foreach (var weapon in _weapons) {
+            weapon.ChangeSelection(false);
+        }
+        SelectWeapon(0);
+        _tabAction =InputSystem.actions.FindAction("Tab");
+        _tabAction.started += ManageWeaponSwitch;
+    }
+
+    private void ManageWeaponSwitch(InputAction.CallbackContext obj) {
+        Debug.Log("Switch gun");
+        if (_currenWeaponID+1>=_weapons.Length) SelectWeapon(0);
+        else SelectWeapon(_currenWeaponID+1);
     }
 
     void Update() {
         //ManageMovement();
+        if (!_isAlive) return;
         ManageAim();
         ManageFire();
+        
     }
 
     private void ManageAim() {
-        
         if (Physics.Raycast(_camera.ScreenPointToRay(Mouse.current.position.value),  out hit)) {
             _cannon.forward = hit.point - _cannon.position;
-            _lineRenderer.SetPosition(0, _cannon.position);
-            _lineRenderer.SetPosition(1, hit.point);
         }
         
     }
@@ -42,34 +60,46 @@ public class RototController : MonoBehaviour
         if (Mouse.current.leftButton.isPressed) {
             if (!_isFire) {
                 _isFire = true;
-                OnStartFire();
+                _currentWeapon.StartClick();
             }
         }
         else if (_isFire && !Mouse.current.rightButton.isPressed) {
             _isFire = false;
-            OnEndFire();
+            _currentWeapon.StopClick();
         }
     }
 
-    private void OnStartFire() {
-        if( _prfFireImpact){ 
-            GameObject go = Instantiate(_prfFireImpact, hit.point, Quaternion.identity);
-            go.transform.up = hit.normal;
-        }
+    
 
-        if (hit.collider.GetComponent<IDamagable>() != null) {
-            IDamagable target = hit.collider.GetComponent<IDamagable>();
-            target.TakeDamage(1, hit.point, hit.normal);
+    private void SelectWeapon(int id) {
+        if (_currentWeapon != null) {
+            _currentWeapon.ChangeSelection(false);
         }
-        _lineRenderer.startColor =_fireLazerColor;
-        _lineRenderer.endColor =_fireLazerColor;
+        _currentWeapon = _weapons[id];
+        _currenWeaponID = id;
+        _currentWeapon.ChangeSelection(true);
     }
 
-    private void OnEndFire()
-    {
-        _lineRenderer.startColor =_defaultLazerColor;
-        _lineRenderer.endColor =_defaultLazerColor;
-    }
+   
+
+    
+
+    //[ContextMenu("TestRagdoll")]
+    //private void TriggerRagdoll() {
+    //    foreach (var rb in _rbRagdolls) {
+    //        rb.isKinematic = false;
+    //        rb.useGravity = true;
+    //        rb.constraints = RigidbodyConstraints.None;
+    //    }
+//
+    //    foreach (var col in _colliders) {
+    //        col.enabled = true;
+    //    }
+//
+    //    _locomotorBrainIK.enabled = false;
+    //    _physicController.enabled = false;
+    //    _isAlive = false;
+    //}
     
 
     //private void ManageMovement()
@@ -85,4 +115,8 @@ public class RototController : MonoBehaviour
     //    rotation *= Time.deltaTime;
     //    transform.Rotate(transform.up, rotation);
     //}
+    public void TakeDamage(float damage, Vector3 hitPoint, Vector3 hitNormal)
+    {
+       Debug.Log("TakeDamage");
+    }
 }
